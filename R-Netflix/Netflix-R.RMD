@@ -1,0 +1,426 @@
+---
+title: "Netflix- TV Shows and Movies"
+author: "Zamir Ahmad"
+date: "`r Sys.Date()`"
+output: word_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+Introduction:
+
+#The objective of the project was to extract as many insights as possible from the movies and shows added to Netflix. To achieve this goal, I found the best-performing movies and TV shows based on their IMDb and TMDb scores. Additionally, I examined the actors and directors involved in the creation of the highest-rated movies and TV shows. I investigated the correlation between IMDb scores and votes, searching for patterns and trends in the data. Furthermore, I explored other related factors and compared the performance of TV shows and movies.
+
+Netflix - TV Shows and Movies This dataset was created to list all shows
+and movies available on Netflix. It was collected from JustWatch in
+March 2023, containing data available in the United States.
+
+Content This dataset contains two files, one for the titles (titles.csv)
+and the other for the cast (credits.csv) of each movie and show on the
+platform.
+
+The titles.csv contains more than 6k titles, witch 15 columns
+containing:
+
+id: The title ID on JustWatch. title: The name of the title. show_type:
+TV show or movie. description: A brief description. release_year: The
+release year. age_certification: The age certification. runtime: The
+length of the episode (SHOW) or movie. genres: A list of genres.
+production_countries: A list of countries that - produced the title.
+seasons: Number of seasons if it's a SHOW. imdb_id: The title ID on
+IMDB. imdb_score: Score on IMDB. imdb_votes: Votes on IMDB.
+tmdb_popularity: Popularity on TMDB. tmdb_score: Score on TMDB. The
+credits.csv contains over 81k credits of actors and directors, with 5
+columns containing:
+
+person_ID: The person ID on JustWatch. id: The title ID on JustWatch.
+name: The actor or director's name. character_name: The character name.
+role: ACTOR or DIRECTOR.
+
+IMDb is an acronym for the Internet Movie Database, an online repository
+of information pertaining to movies, TV shows, and video games. It
+provides extensive details such as cast and crew members, plot
+summaries, and ratings and reviews. IMDb is considered the go-to source
+for anyone who wants to know more about a particular movie, TV show, or
+video game. It has become an invaluable resource for filmmakers, actors,
+and other industry professionals, who rely on it to track down facts and
+other information.
+
+Similarly, TMDb is a database that provides information about movies, TV
+shows, and actors. It encompasses an extensive collection of millions of
+titles from across the globe. It features detailed information,
+including cast and crew members, plot summaries, ratings, reviews, and
+other relevant details.
+
+#Datset
+
+library(readr) 
+df = read.csv('titles.csv') 
+df2 = read.csv('credits.csv')
+
+str(df)
+
+data = df %>% inner_join(df2, by = 'id',suffix = c('_title','_credit')) 
+
+
+theme_s = theme(text= element_text(family = 'serif',size=14), rect =
+element_blank(), panel.grid = element_blank(), title=
+element_text(color= "#8b0000"), axis.line = element_line(color=
+'black'))
+
+install.packages("RColorBrewer") 
+library(RColorBrewer) 
+my_palette <-brewer.pal(n = 10, name = "Paired") 
+my_palette 
+library(stringr)
+
+# I replaced the blank rows in the age_certification column with 'none' to be more specific. To make the data look cleaner, I removed the signs "[ ]" and quotation marks.
+
+df$age_certification[df$age_certification== ''] = 'None'
+df$production_countries=df$production_countries %>%
+str_remove_all(fixed("[")) %>% str_remove_all(fixed("]"))
+df$production_countries=df$production_countries %>%
+str_remove_all(fixed("'")) %>% str_remove_all(fixed("'"))
+
+ggplot(df,aes(x=type)) + geom_bar() + theme_s + labs(title = "Netflix
+Titles:A Breakdown of Movies vs. TV Shows in 2023", x= '', y='Count')
+
+df %>% group_by(type) %>% summarize(n())
+
+#Notes: As of now March 2023, Netflix has 3831 movies and 2306 shows.
+
+# Shows
+
+# As a first step, I will analyze Netflix shows.
+
+shows = df %>% filter(type == 'SHOW')
+
+sum(is.na(shows)) install.packages('visdat') library(visdat)
+vis_miss(shows)
+
+#During the initial phase of the analysis, a check was conducted to identify any missing columns in the dataset. I discovered that 1.3% of the dataset had missing values. As a result, I dropped the missing values from the "imdb_score" column rather than replacing them in the graphs.
+
+top_shows = arrange(shows,desc(imdb_score)) %\>% slice(1:10,) %\>%
+select(title,imdb_score) top_shows
+
+ggplot(top_shows,aes(y=title,x=imdb_score)) +
+geom_bar(stat='identity') + labs(title="Top 10 Ranked Shows on Netflix
+with the Highest IMDB Score in 2023", y= '', x='IMDB Score') + theme_s
+
+#As part of the analysis, I ranked the top 10 Netflix shows based on their IMDB score. According to the results, the shows "Crazy Delicious" and "#ABtalks" ranked first with an imdb score of 9.6. Interestingly,there was only a 0.5 difference in imdb score between first and tenth place, indicating relatively high quality throughout.
+
+low_shows = arrange(shows,imdb_score) %>% slice(1:10,) %>%
+select(title,imdb_score) low_shows
+
+ggplot(low_shows,aes(y=title,x=imdb_score)) +
+geom_bar(stat='identity') + labs(title='Top 10 Ranked Shows on Netflix
+with the lowest IMDB score in 2023', y= '', x='IMDB Score') + theme_s
+
+#In addition to ranking the top 10 Netflix shows based on their IMDb score, I also listed the poorest performing shows. The show "Hype House" ranked first in this list with an imdb score of 1.9. Interestingly, the difference in IMDB score between the first and tenth place in this list was exactly one point. Accordingly, these shows may need to be replaced by alternative shows that are more appealing to the general public.
+
+shows %>% filter(!is.na(imdb_score)) %>% ggplot(aes(x=imdb_score)) +
+geom_histogram() + theme_s + labs(title='IMDB Score Distribution of
+Shows on Netflix in 2023', y='Count', x='IMDB Score')
+
+#The graph depicts the distribution of IMDB scores across Netflix shows.Notably, the distribution appears slightly skewed to the left,suggesting that some shows have received poor IMDB scores. The median score was 7.1. The average IMDB rating was 6.992 with a standard deviation of 1.05, suggesting that most of the data points were relatively close to the mean. The mode, which represents the most common score, was 7.4. These results suggest that Netflix tends to select shows that perform well in the eyes of its audience, with very few shows having a score less than 6 on IMDB.
+
+install.packages('DescTools') library(DescTools)
+
+summary(shows\$imdb_score)
+
+shows %>% filter(!is.na(imdb_score)) %\>% summarize(sd =
+sd(imdb_score),mode = Mode(imdb_score)) shows= shows %\>% mutate(
+log_imdb_votes = log(imdb_votes))
+
+ggplot(shows,aes(x=log_imdb_votes,y=imdb_score)) +
+geom_point(alpha=0.4) + labs(title= 'IMDB Score vs IMDB Votes', x= 'IMDB
+Votes(in logs)', y= 'IMDB Score' ) + theme_s
+
+cor(shows$log_imdb_votes,shows$imdb_score, use = 'complete.obs')
+
+#The graph depicts the relationship between IMDB votes and IMDB scores for shows available on Netflix. The aim was to explore whether there was a positive correlation between the number of votes and the IMDB score. The correlation coefficient was 0.32, indicating a moderate positive relationship between these two variables. These results suggest that the number of votes is a weak indicator of the score of a show. In other words, shows that receive a relatively larger number of votes do not necessarily receive a high score.
+
+top_popularity = arrange(shows,desc(tmdb_popularity)) %>% slice(1:10,)
+%>% select(title,tmdb_popularity) top_popularity
+
+ggplot(top_popularity,aes(y=title,x=tmdb_popularity)) +
+geom_bar(stat='identity') + labs(title='Top 10 Most Popular Shows on
+Netflix as Measured by TMDB Popularity Score in 2023', y='', x='TBDB
+Popularity Score') + theme_s
+
+# According to the graph, The Flash ranks first among the top 10 most popular shows based on their TMDB popularity score. Other popular shows on Netflix such as Wednesday, Grey's Anatomy, and The Walking Dead are also among the top 10.
+
+shows_1990 = shows %>% filter(release_year >= 1990)
+
+shows_1990 %>% group_by(release_year) %%
+summarize(avg_run=mean(runtime)) %>%
+ggplot(aes(x=release_year,y=avg_run)) + geom_line() + labs(title=
+'Average Runtime per Episode of TV Shows Over Time (1940-2023)',
+x='Year', y='Average Runtime in mins') + theme_s
+
+# The graph illustrates the trend of the average runtime per episode for tv shows from 1990 to 2023. The data indicates that the average runtime of an episode was approximately 32 minutes in 1990 and then decreased to nearly 22 minutes by the year 2000. However, from 1990 to 2023, there has been a consistent increase in the length of episodes. As of 2023, the average show on Netflix has an episode runtime of approximately 42 minutes.
+
+shows$year_range=cut(shows$release_year,breaks=c(1940,1960,1980,2000,2020,2023))
+
+table(shows\$year_range)
+
+ggplot(shows,aes(x=year_range)) + geom_bar() + labs( title= ' Number of
+Shows on Netflix produced during a certain time frame', x= 'Number of
+Shows on Netflix Produced within two decades', y= 'Count') +\
+theme_s
+
+# After categorizing shows by their release year, it appears that most of the shows currently available on Netflix were released between 2000 and 2020. There are 1,526 movies within this time frame. Netflix has also added 746 shows that were released between 2020 and 2023. This data implies that Netflix has a preference for adding more recently released movies to its platform.
+
+most_common_genre=shows %>% group_by(genres) %>%
+summarize(n=n(),mean_imdb = mean(imdb_score)) %>% arrange(desc(n)) %>%
+head(10)
+
+most_common_genre
+
+most_common_genre %>% ggplot(aes(y=genres,x=n)) +
+geom_bar(stat='identity') + labs(title="Most Common Genres in Netflix
+Shows in 2023: Top 10 Ranked by Frequency", y= 'Genre', x='Count') +
+theme_s
+
+# The graph depicts the top ten genres on Netflix based on the number of shows in each category. The genre of reality has the most shows available on Netflix, with 152 shows. Drama and documentaries are also popular genres among the audience. Additionally, there are 107 comedy movies available on the platform. It's worth noting that some shows on Netflix fall into multiple genres. For example, there are 62 movies that belong to both the drama and romance genres. Based on the data presented in the graph, it can be concluded that the audience tends to prefer drama, comedy, documentaries, as well as shows that combine drama and romance.
+
+shows$country=shows$production_countries %>% str_remove_all(fixed("["))
+%>% str_remove_all(fixed("]")) shows %>% group_by(country) %>%
+summarize(n = n()) %>% arrange(desc(n)) %>% head(10)
+
+shows %>% group_by(country) %>% summarize(n = n()) %>%
+arrange(desc(n)) %>% head(10) %>% ggplot(aes(x=country,y=n)) +
+geom_bar(stat='identity') + labs(title='Netflix Shows by Country:
+Ranking the Top 10 Producers', y= 'Count', x='') + theme_s
+
+# The graph represents the top 10 countries that have produced the most number of shows. The United States is at the top of the list, having produced 838 shows. South Korea ranks second with 212 shows, followed by Japan with 175 shows. It's important to note that the dataset includes shows that were produced in multiple countries.
+
+shows %>% group_by(title) %>% mutate(n()) %>% arrange(desc(seasons))
+%>% head(10) %>% select(title,seasons) shows %>% group_by(title) %>%
+mutate(n()) %>% arrange(desc(seasons)) %>% head(10) %>%
+ggplot(aes(y=title,x=seasons)) + geom_bar(stat='identity') +
+labs(title='Long-Running Netflix Shows: Top 10 with the Most Seasons',
+y='', x='Number of Seasons') + theme_s
+
+# The graph displays the top TV shows with the most seasons. Survivor leads the list with 44 seasons, followed by The Amazing Race with 34 seasons and The Real World with 33 seasons.
+
+# Audience
+
+shows %>% group_by(age_certification) %>% summarize(n = n())
+
+shows %>% group_by(age_certification) %>% summarize(n = n()) %>%
+ggplot(aes(y=age_certification,x=n)) + geom_bar(stat='identity') +
+labs(title = 'Netflix and Ratings: Number of Shows by Age Certification
+in 2023', y='Age Certification', x='Count') + theme_s
+
+# The graph shows the distribution of age certifications among the shows on Netflix. The majority of shows on Netflix are rated TV-MA, which means they are intended for mature audiences aged 17 and above due to the presence of graphic violence, explicit content, or strong language. This suggests that Netflix focuses on creating and adding content for a more mature audience. The second most common certification is TV-14, which includes 493 shows. TV-14 content is considered inappropriate for children under the age of 14 due to the presence of strong language, sexual content, or intense violence.
+
+new_shows = shows %>% filter(release_year > 2010) %>%
+filter(!is.na(imdb_score))
+
+new_shows %>% group_by (release_year) %>% summarize(max_imdb=
+max(imdb_score), title = title[which.max(imdb_score)])
+
+new_shows %>% group_by (release_year) %>% summarize(max_imdb=
+max(imdb_score), title = title[which.max(imdb_score)]) %>%
+ggplot(aes(y=as.factor(release_year),x=max_imdb)) +
+geom_bar(stat='identity') + geom_text(aes(label = title), hjust = 1.3,
+vjust = 0.5,color='white') + labs( title = "IMDB's Best: Maximum Score
+by Release Year and Show on Netflix",\
+x = "IMDB Score", y = "Release Year") + theme_s
+
+#The graph represents TV shows that have received the highest IMDB ratings for the year of their release. As of 2023, Full Swing is the top-rated show on Netflix according to IMDB ratings. The graph helps to filter out the shows based on their IMDB rating and release year. For instance, in 2010, The Great British Baking Show had the highest IMDB rating among all the shows released in the same year that are currently available on Netflix.
+
+## Movies
+
+# Next, we'll analyze the movies that are available on Netflix.
+
+movie = df %>% filter(type == 'MOVIE')
+
+vis_miss(movie)
+
+movie = movie %>% mutate(imdb_score =
+ifelse(is.na(imdb_score),mean(imdb_score,na.rm=T),imdb_score))
+
+# Instead of using the median or average IMDB score, I opted to remove all movies from the dataset that did not have an IMDB score. This approach could potentially provide a more precise depiction of the distribution of IMDB scores among Netflix movies.
+
+movie %>% filter(!is.na(imdb_score)) %>% ggplot( aes(x=imdb_score)) +
+geom_histogram() + labs(title='Netflix Movie Ratings: A Look at the
+Distribution of IMDB Scores (2023)', y='Count', x='IMDB Score') +
+theme_s
+
+movie %>% filter(!is.na(imdb_score)) %>% summarize(sd=
+sd(imdb_score),mode=Mode(imdb_score)) summary(movie\$imdb_score)
+
+# The graph displays the distribution of IMDB scores for all movies available on Netflix. The graph is slightly skewed to the left, suggesting that there are relatively few movies with low ratings. The average IMDB score is 6.27, and the standard deviation is 1.05, indicating that the IMDB scores are clustered around the mean. The median IMDB score is 6.3, and the mode is 6.26. It is noteworthy that the mode, average, and median of IMDB scores for movies on Netflix are slightly lower than those for TV shows on the platform.
+
+top_movies = movie %>% arrange(desc(imdb_score)) %>% head(10) %>%
+select(title,imdb_score) top_movies
+
+ggplot(top_movies,aes(y=title,x=imdb_score)) + geom_bar(stat=
+'identity') + scale_x_continuous(breaks = c(0,2.5,5.0,7.5,10)) +
+labs(title = "Top 10 Highest-Rated Movies on Netflix in 2023 by IMDB
+Score", y= '', x='IMDB Score') + theme_s
+
+# The graph shows the top 10 movies with the highest IMDB ratings. Both The Dark Knight and The Lord of the Rings: The Return of the King hold the top spot with a rating of 9.0. Interestingly, the range between the highest rated and 10th highest rated movie is only 0.2, indicating that these movies are all highly regarded by IMDB users.
+
+movie =movie %>% mutate(log_imdb_votes= log(imdb_votes))
+
+ggplot(movie,aes(y=imdb_score,x=log_imdb_votes)) +
+geom_jitter(alpha=0.3) + labs(title = 'Relationship between IMDB Scores
+and Votes for Movies on Netflix', x= 'IMDB Votes (in logs)', y= 'IMDB
+Score') + theme_s
+
+cor(movie$imdb_score,movie$log_imdb_votes, use = 'complete.obs')
+
+# The graph depicts how the IMDB scores of movies are related to the number of IMDB votes they have received. It shows that having a greater number of votes does not necessarily lead to a higher score. The correlation coefficient of 0.21 indicates that there is a weak positive correlation between the two variables.
+
+movie %>% arrange(desc(tmdb_popularity)) %>% head(10) %>%
+ggplot(aes(y=title,x=tmdb_popularity)) + geom_bar(stat='identity') +
+labs(title = 'Top 10 Highest Ranked TMDB Rated Movies on Netflix in
+2023', y='', x='TMDB Popularity') + theme_s
+
+# The graph displays the top 10 most popular movies on TMDB, with Narvik ranking first and being the most popular movie on TMDB.
+
+ggplot(movie,aes(x=runtime,y=imdb_score))+geom_jitter() +
+geom_smooth(method='lm') + labs(title= 'The Relationship Between Runtime
+and IMDB Score in Netflix Movies', y='IMDB Score', x='Runtime(in
+mins)') + theme_s
+
+cor(movie$runtime,movie$imdb_score)
+
+# The graph examines the correlation between the runtime of movies and their IMDb scores. The data suggests that there is no particular runtime preference among audiences when it comes to movies. The correlation coefficient of 0.08 indicates a weak positive correlation between the two variables, meaning that there is little to no relationship between the length of a movie and its IMDb score. Therefore, it can be concluded that longer or shorter movies do not necessarily lead to higher IMDb scores.
+
+movie %>% group_by(as.factor(release_year)) %>% filter(release_year >=1980) %>% mutate(avg_run = mean(runtime)) %>%
+ggplot(aes(x=release_year,y=avg_run)) + geom_line() + labs(title= "How
+Movie Runtimes Have Changed Over the Years", y= 'Average Runtime',
+x='Year') + theme_s
+
+# The graph shows the average runtime for movies from 1980 to the present day. It indicates that the average runtime increased during the 1980s and then significantly decreased over the next three decades. Currently, the average movie runtime is approximately 100 minutes, or 1 hour and 40 minutes. This suggests that audiences tend to prefer relatively shorter movies.
+
+movie$year_range = cut(movie$release_year,breaks =
+c(1940,1960,1980,2000,2020,2023))
+
+table(movie\$year_range)
+
+ggplot(movie,aes(x=year_range)) + geom_bar() + labs(title= 'Number of
+Shows on Netflix produced during a certain time frame', y='Count',
+x='Number of Shows on Netflix Produced within two decades') + theme_s
+
+# A larger number of movies, specifically 2545, that were produced between the years 2000 and 2020 have been added, in comparison to the number of movies, that is 1134, released after 2020. This indicates that Netflix has a preference for adding relatively more recent movies instead of older ones.
+
+movie$production_countries[movie$production_countries==''] = 'NA'
+top_countries = movie %>% group_by(production_countries) %>%
+summarize(n= n()) %>% arrange(desc(n)) %>% head(10) top_countries
+
+ggplot(top_countries,aes(x=production_countries,y=n)) +
+geom_bar(stat='identity') + labs(title='Number of Movies Produced by
+Country on Netflix', y= 'Count', x='Country') + theme_s
+
+# "The graph displays the top ten countries that have produced the most number of movies available on Netflix. With 1143 movies produced, the United States is at the top of the list, followed by India with approximately 576 movies. It should be noted that some movies were produced in more than one country."
+
+movie %>% group_by(genres) %>% summarize(n= n()) %>% arrange(desc(n))
+%>% head(10) %>% select(genres,n)
+
+movie %>% group_by(genres) %>% summarize(n= n()) %>% arrange(desc(n))
+%>% head(10) %>% ggplot(aes(y=genres,x=n)) +
+geom_bar(stat='identity') + theme_s + guides(fill='none') + labs(title =
+"Netflix's Most Popular Genres: A Count of Movies by Genre", y=
+'Genres', x='Count')
+
+# The graph depicts the distribution of movies across various genres on Netflix. The comedy genre has the highest number of movies, with 409 movies falling under this category. The drama category has the second-highest number of movies at 237, followed by the documentary category with 236 movies. The graph highlights that Netflix subscribers tend to prefer comedy, drama, and documentaries among all the available genres. Additionally, some of the listed categories combine two or more genres, such as romance and comedy or drama and comedy.
+
+movie %>% group_by(age_certification) %>% summarize(n= n()) %>%
+arrange(desc(n)) %>% head(10) %>%
+ggplot(aes(x=age_certification,y=n)) + geom_bar(stat='identity') +
+theme_s + labs(title = 'Netflix and Ratings: Number of Movies by Age
+Certification in 2023', y= 'Genres', x='Count')
+
+# The graph shows the distribution of movies across different age certification categories. The majority of movies are classified as family-friendly with no age restrictions. However, there are also a number of movies with an R-rating, indicating that the movie may contain strong language, violence, nudity or sexual content.
+
+movie_2010 = movie %>% filter(release_year > 2010)
+
+movie_2010 %>% group_by(release_year) %>% summarize(max_imdb =
+max(imdb_score),title= title[which.max(imdb_score)]) %>%
+ggplot(aes(y=as.factor(release_year),x=max_imdb)) +
+geom_bar(stat='identity')+
+geom_text(aes(label=title),hjust=1.3,vjust=0.5,color='white') + labs(x =
+"Maximum IMDB Score", y = "Release Year", title = "The Best of Every
+Year: Highest IMDB Score by Release Year")
+
+# The graph displays the highest-rated movie released in each year, based on the IMDB score. For instance, in 2017, the movie "Hasan Minhaj: Homecoming King" had the highest IMDB rating among all the movies released that year and available on Netflix. The graph provides a visual representation of the top-rated movies released each year and available on Netflix.
+
+----End
+
+summary(shows$imdb_score) summary(movie$imdb_score)
+
+ggplot(df,aes(y=imdb_score,x=type)) + geom_boxplot() + labs(title=
+'Comparing IMDB Scores between Movies and Shows on Netflix', y='IMDB
+Score', x='Type') + theme_s
+
+# The boxplot depicts the distribution of IMDb scores for movies and TV shows. The median IMDb score for TV shows is higher than that for movies, with values of 7.1 and 6.3, respectively. Both categories exhibit outliers on the lower end of the score distribution. The interquartile range for both categories is 1.3, indicating a small spread in the middle 50% of the values. The standard deviation for both categories is around 1.05. Notably, the TV show category has a slightly larger range, with a value of 7.7.
+
+ggplot(df,aes(y=tmdb_score,x=type)) + geom_boxplot() + labs(title= "TMDB
+Scores on Netflix: Movies vs Shows", y='TMDB Score', x='Type') + theme_s
+
+summary(shows$tmdb_score) summary(movie$tmdb_score)
+
+# The boxplot illustrates the distribution of TMDB scores for movies and TV shows. The TV show category has a higher median score at 7.29 compared to movies, which have a median score of around 6.0. TV shows also have a larger range of scores, with a maximum score of 9.5, compared to movies, which have a maximum score of around 8.5. Both categories have outliers on both ends of the distribution, indicating the presence of movies and TV shows with exceptionally high or low scores. The interquartile range, which measures the spread of the middle 50% of the data, is nearly identical for both categories at 1.28. The standard deviation is around 1.05 for both categories, indicating a relatively small amount of variability around the median score.
+
+# Combined
+
+# Next, I merged the titles data frame with the credit data frame.
+
+data %>% group_by(name) %>% summarize(avg_imdb_score =
+mean(imdb_score), n= n()) %>% arrange(desc(n)) %>% head(10)
+
+data %>% group_by(name) %>% summarize(avg_imdb_score =
+mean(imdb_score), n= n()) %>% arrange(desc(n)) %>% head(10) %>%
+ggplot(aes(y=name,x=n)) + geom_bar(stat='identity') + labs(title="The
+Actors Who Starred in the Most Movies and Shows on Netflix" , y='Actor',
+x='Count') + theme_s
+
+# The bar graph illustrates the top 10 actors who have worked in the highest number of movies or shows available on Netflix. Shah Rukh Khan, a popular Indian actor, has worked in the most number of movies or shows, with a count of 38. Boman Irani, another Indian actor, has worked in 24 movies. The list includes a total of 5 Indian actors.
+
+top_actors_imdb=data %>% group_by(name) %>% summarize(avg_imdb_score =
+mean(imdb_score), n= n()) %>% filter(n>10) %>%
+arrange(desc(avg_imdb_score)) %>% head(10) top_actors_imdb
+
+top_actors_imdb %>% ggplot(aes(y=name,x=avg_imdb_score)) +
+geom_bar(stat='identity') + scale_x_continuous(limits= c(0,8.5),expand
+= c(0,0.3)) + labs(title="Top Actors with the Highest Average IMBD
+Ratings on Netflix", y= 'Average IMBD Rating', x='Actor') + theme_s
+
+# The graph displays actors who have appeared in more than 10 movies and have the highest average IMDB score across their films. Bo Burnham tops the list with an average IMDB score of 8.02, followed by Graham Chapman and Aamir Khan. It is noteworthy that all these actors have appeared in movies that have been well received by the audience.
+
+director= data %>% filter(role == 'DIRECTOR')
+
+director %>% group_by(name) %>% summarize(n= n()) %>% filter(n>5)
+%>% arrange(desc(n)) %>% head(10)
+
+director %>% group_by(name) %>% summarize(n= n()) %>% filter(n>5)
+%>% arrange(desc(n)) %>% head(10) %>% ggplot(aes(x=n,y=name)) +
+geom_bar(stat='identity') + scale_x_continuous(limits= c(0,20),expand =
+c(0,0.3)) + labs(title=' Top 10 Directors that directed the most Movies
+and Shows on Netflix', y='Director', x='Count') + theme_s
+
+#The vertical bar graph presents data on the number of movies available
+on Netflix directed by different directors. Raul Campos tops the list
+with 20 movies directed, followed by Jan Suter with 19 movies and Ryan
+Polito with 17 movies.
+
+director %>% group_by(name) %>% summarize(n=
+n(),avg_imdb=mean(imdb_score)) %>% filter(n>5) %>%
+arrange(desc(avg_imdb)) %>% head(10)
+
+director %>% group_by(name) %>% summarize(n=
+n(),avg_imdb=mean(imdb_score)) %>% filter(n>5) %>%
+arrange(desc(avg_imdb)) %>% head(10) %>%
+ggplot(aes(x=avg_imdb,y=name)) + geom_bar(stat='identity') +
+labs(title='Top 10 Directors with the Highest Average Rated Films on
+IMDb', y='Director', x='Average IMDB Rating') + theme_s
+
+# The graph presents the top ten directors who worked on more than five movies on Netflix and had the highest average rating on IMDb. Mani Ratnam has the highest average IMDb rating on his movies at 7.73, followed by Quentin Tarantino and Hayao Miyazaki. This suggests that the movies directed by these directors have been well-received by the audience.
+
+# In conclusion, the dataset provided valuable insights into how Netflix selects and adds content to its platform. It was observed that a majority of TV shows on the platform were intended for mature audiences, while the movies were more family-friendly. Interestingly, the number of IMDB votes did not necessarily lead to higher scores. Netflix tends to add content that is well-liked by the audience, as reflected in the high ratings for most movies and TV shows. The average runtime for movies has decreased over the years, while that of TV shows has increased. Overall, the dataset provides useful information for understanding the trends in content selection and viewer preferences on Netflix.
